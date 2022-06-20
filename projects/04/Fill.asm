@@ -1,3 +1,7 @@
+// if a key is being pressed, screen will be black
+/ otherwise screen will be white
+
+
 (START)
 @SCREEN
 D=A
