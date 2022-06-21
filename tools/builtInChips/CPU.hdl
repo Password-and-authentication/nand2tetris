@@ -39,70 +39,35 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-        Mux16(a=alu, b=instruction, sel=instruction[15], out=ia);
-        ARegister(in=ia, load=instruction[5], out=oa, out=addressM[0..14]);
+        Mux(a=true, b=instruction[5], sel=instruction[15], out=loada);
+        And(a=instruction[4], b=instruction[15], out=loadc);
+        
+        
+        Mux16(a=instruction, b=alu, sel=instruction[15], out=mux);
+        ARegister(in=mux, load=loada, out=aa, out[0..14]=addressM);
 
-        Mux16(a=oa, b=inM, sel=instruction[11], out=y);
-
+        Mux16(a=aa, b=inM, sel=instruction[12], out=y);
         ALU(x=x, y=y, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=alu, out=outM, zr=zr, ng=ng);
-        DRegister(in=alu, load=instruction[4], out=x);
+        DRegister(in=alu, load=loadc, out=x);
 
-        Or(a=instruction[3], b=false, out=writeM);
-
+        And(a=instruction[3], b=instruction[15], out=writeM);
+        
+        
         Not(in=zr, out=nzr);
-        Not(in=ng, out=nng);
+        Not(in=ng, out=pos);
 
-        And(a=instruction[0], b=nzr, out=dk);
-        And(a=dk, b=nng, out=o1);
+        And(a=instruction[15], b=instruction[0], out=jgt);
+        And(a=pos, b=nzr, out=posnzr);
+        And(a=posnzr, b=jgt, out=ld1);
 
-        And(a=instruction[1], b=zr, out=o2);
+        And(a=instruction[15], b=instruction[1], out=jeq);
+        And(a=jeq, b=zr, out=ld2);
 
-        And(a=instruction[0], b=instruction[1], out=oo);
-        And(a=oo, b=instruction[2], out=o3);
+        And(a=instruction[15], b=instruction[2], out=jlt);
+        And(a=jlt, b=ng, out=ld3);
 
-        And(a=nzr, b=ng, out=rr);
-        And(a=rr, b=instruction[2], out=o4);
+        Or(a=ld1, b=ld2, out=ldt);
+        Or(a=ld3, b=ldt, out=ld);
 
-        Or(a=o1, b=o2, out=c1);
-        Or(a=o3, b=o4, out=c2);
-        Or(a=c1, b=c2, out=load);
-        
-        Not(in=reset, out=nreset);
-        And(a=load, b=nreset, out=l);
-        Not(in=load, out=nload);
-        And(a=nreset, b=nload, out=inc);
-
-
-        PC(in=oa, load=l, inc=inc, reset=reset, out=address);
-
-        addressM = address[0..15];
-
-        
-
-        
-
-        
-
-
-
-        
-        
-
-
-
-        
-
-
-
-
-
-
-
-        
-
-
-
-
-
-        
+        PC(in=aa, load=ld, inc=true, reset=reset, out[0..14]=pc);      
 }
